@@ -14,7 +14,7 @@ import com.microsoft.azure.servicebus.*;
 import com.microsoft.azure.servicebus.primitives.ConnectionStringBuilder;
 import com.microsoft.azure.servicebus.primitives.ServiceBusException;
 
-public class MyServiceBusTopicClient {
+public class CalcbenchFilingsServiceBusTopicClient {
 
     static final Gson GSON = new Gson();
     
