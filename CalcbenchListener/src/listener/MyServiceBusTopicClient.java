@@ -1,12 +1,13 @@
+// From https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-java-how-to-use-topics-subscriptions
+
 package listener;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.io.InputStream;
 import java.time.Duration;
-import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
-
-import org.apache.commons.cli.*;
 
 import com.google.gson.Gson;
 import com.microsoft.azure.servicebus.*;
@@ -18,13 +19,14 @@ public class MyServiceBusTopicClient {
     static final Gson GSON = new Gson();
     
 	public static void main(String[] args) throws Exception, ServiceBusException {
-        SubscriptionClient subscription1Client = new SubscriptionClient(new ConnectionStringBuilder(connectionString, "BasicTopic/subscriptions/Subscription1"), ReceiveMode.PEEKLOCK);
-        SubscriptionClient subscription2Client = new SubscriptionClient(new ConnectionStringBuilder(connectionString, "BasicTopic/subscriptions/Subscription2"), ReceiveMode.PEEKLOCK);
-        SubscriptionClient subscription3Client = new SubscriptionClient(new ConnectionStringBuilder(connectionString, "BasicTopic/subscriptions/Subscription3"), ReceiveMode.PEEKLOCK);        
+		Properties prop = new Properties();
+		InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
+		prop.load(input); 
+		String connectionString = prop.getProperty("ConnectionString");
+		String topicString = prop.getProperty("Topic");
+        SubscriptionClient subscription1Client = new SubscriptionClient(new ConnectionStringBuilder(connectionString, topicString), ReceiveMode.PEEKLOCK);
 
         registerMessageHandlerOnClient(subscription1Client);
-        registerMessageHandlerOnClient(subscription2Client);
-        registerMessageHandlerOnClient(subscription3Client);
 	}
 	
     static void registerMessageHandlerOnClient(SubscriptionClient receiveClient) throws Exception {
@@ -33,27 +35,10 @@ public class MyServiceBusTopicClient {
     	IMessageHandler messageHandler = new IMessageHandler() {
             // callback invoked when the message handler loop has obtained a message
             public CompletableFuture<Void> onMessageAsync(IMessage message) {
-                // receives message is passed to callback
-                if (message.getLabel() != null &&
-                        message.getContentType() != null &&
-                        message.getLabel().contentEquals("Scientist") &&
-                        message.getContentType().contentEquals("application/json")) {
 
-                    byte[] body = message.getBody();
-                    Map scientist = GSON.fromJson(new String(body, UTF_8), Map.class);
-
-                    System.out.printf(
-                            "\n\t\t\t\t%s Message received: \n\t\t\t\t\t\tMessageId = %s, \n\t\t\t\t\t\tSequenceNumber = %s, \n\t\t\t\t\t\tEnqueuedTimeUtc = %s," +
-                                    "\n\t\t\t\t\t\tExpiresAtUtc = %s, \n\t\t\t\t\t\tContentType = \"%s\",  \n\t\t\t\t\t\tContent: [ firstName = %s, name = %s ]\n",
-                            receiveClient.getEntityPath(),
-                            message.getMessageId(),
-                            message.getSequenceNumber(),
-                            message.getEnqueuedTimeUtc(),
-                            message.getExpiresAtUtc(),
-                            message.getContentType(),
-                            scientist != null ? scientist.get("firstName") : "",
-                            scientist != null ? scientist.get("name") : "");
-                }
+                byte[] body = message.getBody();
+            	Filing filing =  GSON.fromJson(new String(body, UTF_8), Filing.class);
+            	System.out.printf("filing received for %s\n", filing.ticker);
                 return receiveClient.completeAsync(message.getLockToken());
             }
             
