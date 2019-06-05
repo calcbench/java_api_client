@@ -13,6 +13,7 @@ import com.google.gson.Gson;
 import com.microsoft.azure.servicebus.*;
 import com.microsoft.azure.servicebus.primitives.ConnectionStringBuilder;
 import com.microsoft.azure.servicebus.primitives.ServiceBusException;
+import com.microsoft.azure.servicebus.primitives.TransportType;
 
 public class CalcbenchFilingsServiceBusTopicClient {
 
@@ -21,10 +22,12 @@ public class CalcbenchFilingsServiceBusTopicClient {
 	public static void main(String[] args) throws Exception, ServiceBusException {
 		Properties prop = new Properties();
 		InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
-		prop.load(input); 
+		prop.load(input);
 		String connectionString = prop.getProperty("ConnectionString");
 		String topicString = prop.getProperty("Topic");
-        SubscriptionClient subscription1Client = new SubscriptionClient(new ConnectionStringBuilder(connectionString, topicString), ReceiveMode.PEEKLOCK);
+		ConnectionStringBuilder connectionStringBuilder = new ConnectionStringBuilder(connectionString, topicString);
+		connectionStringBuilder.setTransportType(TransportType.AMQP_WEB_SOCKETS);
+        SubscriptionClient subscription1Client = new SubscriptionClient(connectionStringBuilder, ReceiveMode.PEEKLOCK);
 
         registerMessageHandlerOnClient(subscription1Client);
 	}
